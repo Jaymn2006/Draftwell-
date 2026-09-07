@@ -1,0 +1,52 @@
+# Tests
+
+## Test 1 - Edit and save a manuscript [sanity]
+Viewport: desktop
+Covers: chapter selection, title editing, body editing, local persistence, cloud save workflow
+Description: Verifies the primary writing workflow remains editable and saveable.
+Steps:
+1. Open the workspace and select a chapter
+2. Change its title and manuscript text
+3. Click Save
+Expected: The edited title and text remain visible and the workspace reports the saved state.
+
+## Test 2 - Create account and return through confirmation link
+Viewport: desktop
+Covers: Supabase sign-up, emailRedirectTo configuration, protected workspace access, authentication state
+Description: Verifies account creation uses the deployed origin for email confirmation instead of an unreachable localhost or incorrect REST URL.
+Steps:
+1. Open Create an account
+2. Enter a valid email and password and submit
+3. Open the confirmation email and follow its link
+Expected: The confirmation link opens the same Draftwell origin and the confirmed account can sign in to the protected workspace.
+
+## Test 3 - Keep Actor A and Actor B data isolated
+Viewport: desktop
+Covers: per-user local keys, per-user cloud project ids, settings isolation, authorization boundaries
+Description: Verifies two authenticated users do not overwrite each other's chapters, settings, or cover data.
+Steps:
+1. Actor A signs in, changes their profile name and manuscript, and saves
+2. Actor A signs out
+3. Actor B signs in and changes their profile name and manuscript
+4. Actor B signs out and Actor A signs in again
+Expected: Actor A sees Actor A's settings and manuscript; Actor B sees only Actor B's settings and manuscript.
+
+## Test 4 - Export and preview manuscript
+Viewport: desktop
+Covers: book preview, cover upload, TXT export, JSON export, HTML export, browser PDF/print flow
+Description: Verifies every export action produces a usable user-visible result.
+Steps:
+1. Open Book preview and upload an image cover
+2. Open Export & publish and choose Plain text, Project JSON, and Web page
+3. Open Print / Save PDF
+Expected: The preview shows the selected cover, each export downloads a file, and the browser print dialog opens for PDF creation.
+
+## Test 5 - Guardrails and responsive controls
+Viewport: mobile
+Covers: required authentication fields, feedback rating guardrail, chapter-note editing, responsive modal controls
+Description: Verifies invalid actions are blocked and important controls remain usable on a small viewport.
+Steps:
+1. Open Create an account and submit without a valid email/password
+2. Open the feedback dialog and attempt Send feedback without selecting a rating
+3. Open a chapter note and edit it
+Expected: Invalid authentication input is rejected by the form, feedback cannot be sent without a rating, and the chapter note can be edited and retained locally.
