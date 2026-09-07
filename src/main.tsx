@@ -57,9 +57,6 @@ function App() {
     return () => listener.subscription.unsubscribe()
   }, [])
 
-  if (!introDone) return <IntroScreen />
-  if (!authenticated) return <AuthScreen onOffline={() => { localStorage.setItem('draftwell-offline-mode', 'true'); setAuthenticated(true) }} />
-
   const [chapters, setChapters] = useState<Chapter[]>(() => {
     const saved = localStorage.getItem('draftwell-chapters')
     return saved ? JSON.parse(saved) : initialChapters
@@ -100,6 +97,9 @@ function App() {
     }, shouldAskFirst ? firstDelay : shouldAskMonthly ? 0 : 0)
     return () => window.clearTimeout(timer)
   }, [])
+
+  if (!introDone) return <IntroScreen />
+  if (!authenticated) return <AuthScreen onOffline={() => { localStorage.setItem('draftwell-offline-mode', 'true'); setAuthenticated(true) }} />
 
   function updateBody(body: string) {
     setChapters((current) => current.map((chapter) => chapter.id === activeId ? { ...chapter, body, status: 'Draft' } : chapter))
