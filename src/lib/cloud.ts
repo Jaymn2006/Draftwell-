@@ -23,6 +23,12 @@ export type FeedbackPayload = {
   kind: 'first-minute' | 'monthly'
 }
 
+export type CloudDraft = {
+  title: string
+  settings: CloudSettings
+  chapters: CloudChapter[]
+}
+
 const projectKey = 'draftwell-cloud-project-id'
 
 function getProjectId() {
@@ -33,19 +39,58 @@ function getProjectId() {
   return id
 }
 
+function resetProjectId() {
+  localStorage.removeItem(projectKey)
+}
+
+export async function loadDraftFromCloud(): Promise<CloudDraft | null> {
+  if (!supabase) return null
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  const user = sessionData.session?.user
+  if (!user) return null
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('id, title, settings')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (projectError || !project) return null
+
+  localStorage.setItem(projectKey, project.id)
+
+  const { data: chapters, error: chaptersError } = await supabase
+    .from('chapters')
+    .select('chapter_number, title, note, body, status')
+    .eq('project_id', project.id)
+    .order('chapter_number', { ascending: true })
+
+  if (chaptersError || !chapters || chapters.length === 0) return null
+
+  return {
+    title: project.title,
+    settings: project.settings as CloudSettings,
+    chapters: chapters.map((c) => ({
+      id: c.chapter_number,
+      title: c.title,
+      note: c.note,
+      body: c.body,
+      status: c.status,
+    })),
+  }
+}
+
 export async function syncDraftToCloud(chapters: CloudChapter[], settings: CloudSettings) {
   if (!supabase) return { synced: false, reason: 'not-configured' as const }
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
 
-  let user = sessionData.session?.user
-  if (!user) {
-    const { data, error } = await supabase.auth.signInAnonymously()
-    if (error) throw error
-    if (data.user) user = data.user
-  }
-  if (!user) throw new Error('Supabase did not return an authenticated user.')
+  const user = sessionData.session?.user
+  if (!user) throw new Error('Sign in to sync your work to the cloud.')
 
   const projectId = getProjectId()
   const { error: projectError } = await supabase.from('projects').upsert({
@@ -79,13 +124,8 @@ export async function submitFeedback(feedback: FeedbackPayload) {
   if (!supabase) return { synced: false, reason: 'not-configured' as const }
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
-  let user = sessionData.session?.user
-  if (!user) {
-    const { data, error } = await supabase.auth.signInAnonymously()
-    if (error) throw error
-    if (data.user) user = data.user
-  }
-  if (!user) throw new Error('Supabase did not return an authenticated user.')
+  const user = sessionData.session?.user
+  if (!user) throw new Error('Sign in to submit feedback.')
   const { error } = await supabase.from('feedback').insert({
     user_id: user.id,
     rating: feedback.rating,
@@ -95,3 +135,5 @@ export async function submitFeedback(feedback: FeedbackPayload) {
   if (error) throw error
   return { synced: true as const }
 }
+
+export { resetProjectId }
